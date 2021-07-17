@@ -100,12 +100,16 @@
                 var authHeader = await Authentication
                     .GetAuthenticationHeader(authResponse);
 
+                string token = $"{authHeader}".Substring("Bearer ".Length);
+
+                DateTime validTo = JWTService.GetValidTo(token);
+
                 this.Info = new ConnectionInfo(
                     resource,
                     username,
                     password,
                     authHeader,
-                    DateTime.Now
+                    validTo
                     );
 
                 this.DialogResult = DialogResult.OK;

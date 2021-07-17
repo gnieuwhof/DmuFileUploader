@@ -48,6 +48,7 @@
 
                     string uri = this.connectionInfo.Resource.AbsoluteUri;
                     string username = this.connectionInfo.Username;
+                    DateTime validTo = this.connectionInfo.ValidTo;
 
                     this.SetStatus($"Connected to {uri}");
 
@@ -55,6 +56,7 @@
                     this.WriteLine("Connected");
                     this.WriteLine($"Host: {uri}");
                     this.WriteLine($"User: {username}");
+                    this.WriteLine($"Expires: {validTo}");
                     this.WriteLine();
                 }
                 else

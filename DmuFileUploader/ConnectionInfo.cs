@@ -10,7 +10,7 @@
             string username,
             string password,
             AuthenticationHeaderValue authHeader,
-            DateTime time
+            DateTime validTo
             )
         {
             this.Resource = resource ??
@@ -25,7 +25,7 @@
             this.AuthHeader = authHeader ??
                 throw new ArgumentNullException(nameof(authHeader));
 
-            this.Time = time;
+            this.ValidTo = validTo;
         }
 
 
@@ -37,6 +37,6 @@
 
         public AuthenticationHeaderValue AuthHeader { get; }
 
-        public DateTime Time { get; set; }
+        public DateTime ValidTo { get; set; }
     }
 }
