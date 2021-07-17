@@ -10,6 +10,8 @@
 
         private ConnectionInfo connectionInfo;
 
+        private string file;
+
 
         public MainFrm(HttpClient httpClient)
         {
@@ -27,6 +29,11 @@
         }
 
         private void loginToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Login();
+        }
+
+        private void Login()
         {
             using (var login = new LoginFrm(this.httpClient, this.connectionInfo))
             {
@@ -60,7 +67,21 @@
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                MessageBox.Show($"Selected file: {openFileDialog.FileName}");
+                if(this.connectionInfo == null)
+                {
+                    Login();
+
+                    if(this.connectionInfo == null)
+                    {
+                        this.WriteLine("Login aborted!");
+
+                        return;
+                    }
+                }
+
+                this.file = openFileDialog.FileName;
+
+                this.WriteLine($"Selected file: {this.file}");
             }
         }
 
@@ -88,9 +109,7 @@
 
         private void Write(string text)
         {
-            this.TextTxt.Text += text;
-
-            this.TextTxt.DeselectAll();
+            this.TextTxt.AppendText(text);
         }
 
         private void WriteLine(string line = "")
