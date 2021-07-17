@@ -1,6 +1,8 @@
 ﻿namespace DmuFileUploader
 {
     using System;
+    using System.Net;
+    using System.Net.Http;
     using System.Windows.Forms;
 
     static class Program
@@ -13,7 +15,13 @@
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new LoginFrm());
+
+            using (var httpClient = new HttpClient())
+            {
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+                Application.Run(new MainFrm(httpClient));
+            }
         }
     }
 }

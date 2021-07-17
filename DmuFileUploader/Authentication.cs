@@ -1,6 +1,7 @@
 ﻿namespace DmuFileUploader
 {
     using Newtonsoft.Json;
+    using System;
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
@@ -12,8 +13,8 @@
     {
         public static async Task<AuthenticationHeaderValue> GetAuthenticationHeader(
             HttpClient httpClient,
-            string authorizationUrl,
-            string resource,
+            Uri authorizationUrl,
+            Uri resource,
             string clientId,
             string username,
             string password
@@ -36,8 +37,8 @@
 
         public static async Task<HttpResponseMessage> GetAuthResponse(
             HttpClient httpClient,
-            string authorizationUrl,
-            string resource,
+            Uri authorizationUrl,
+            Uri resource,
             string clientId,
             string username,
             string password
