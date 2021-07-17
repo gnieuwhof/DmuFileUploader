@@ -30,11 +30,13 @@
 
         private void loginToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Login();
+            this.Login();
         }
 
-        private void Login()
+        private DialogResult Login()
         {
+            this.WriteLine("Login");
+
             using (var login = new LoginFrm(this.httpClient, this.connectionInfo))
             {
                 DialogResult result = login.ShowDialog();
@@ -54,11 +56,20 @@
                     this.WriteLine($"User: {username}");
                     this.WriteLine();
                 }
+                else
+                {
+                    this.WriteLine("Login cancelled");
+                    this.WriteLine();
+                }
+
+                return result;
             }
         }
 
         private void selectToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            this.WriteLine("Select file");
+
             var openFileDialog = new OpenFileDialog
             {
                 Filter = "Configuration Migration Utility file (*.zip)|*.zip",
@@ -67,21 +78,36 @@
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                if(this.connectionInfo == null)
+                this.file = openFileDialog.FileName;
+
+                this.WriteLine($"Selected file: {this.file}");
+                this.WriteLine();
+
+                if (this.connectionInfo == null)
                 {
                     Login();
 
                     if(this.connectionInfo == null)
                     {
-                        this.WriteLine("Login aborted!");
-
                         return;
                     }
                 }
 
-                this.file = openFileDialog.FileName;
-
-                this.WriteLine($"Selected file: {this.file}");
+                if(this.connectionInfo != null)
+                {
+                    this.WriteLine("");
+                    this.WriteLine("BUSINESS!!");
+                    this.WriteLine("BUSINESS!!");
+                    this.WriteLine("BUSINESS!!");
+                    this.WriteLine("BUSINESS!!");
+                    this.WriteLine("BUSINESS!!");
+                    this.WriteLine("");
+                }
+            }
+            else
+            {
+                this.WriteLine("Selecting file cancelled");
+                this.WriteLine();
             }
         }
 
