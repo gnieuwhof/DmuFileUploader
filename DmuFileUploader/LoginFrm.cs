@@ -193,6 +193,7 @@
             {
                 this.LoginBtn_Click(sender, e);
 
+                // https://stackoverflow.com/questions/6290967/stop-the-ding-when-pressing-enter
                 e.SuppressKeyPress = true;
             }
         }

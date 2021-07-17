@@ -63,12 +63,6 @@
     <Compile Include="MainFrm.Designer.cs">
       <DependentUpon>MainFrm.cs</DependentUpon>
     </Compile>
-    <Compile Include="MessageFrm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MessageFrm.Designer.cs">
-      <DependentUpon>MessageFrm.cs</DependentUpon>
-    </Compile>
     <Compile Include="OAuthError.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -77,9 +71,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MainFrm.resx">
       <DependentUpon>MainFrm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MessageFrm.resx">
-      <DependentUpon>MessageFrm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
