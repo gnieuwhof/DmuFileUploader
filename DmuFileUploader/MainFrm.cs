@@ -36,9 +36,16 @@
                 {
                     this.connectionInfo = login.Info;
 
-                    string host = this.connectionInfo.Resource.AbsoluteUri;
+                    string uri = this.connectionInfo.Resource.AbsoluteUri;
+                    string username = this.connectionInfo.Username;
 
-                    this.SetStatus($"Connected to {host}");
+                    this.SetStatus($"Connected to {uri}");
+
+                    this.WriteLine();
+                    this.WriteLine("Connected");
+                    this.WriteLine($"Host: {uri}");
+                    this.WriteLine($"User: {username}");
+                    this.WriteLine();
                 }
             }
         }
@@ -86,9 +93,18 @@
             this.TextTxt.DeselectAll();
         }
 
-        private void WriteLine(string line)
+        private void WriteLine(string line = "")
         {
-            this.Write(Environment.NewLine + line);
+            string text = Environment.NewLine;
+
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                string time = DateTime.Now.ToString("HH:mm:ss");
+
+                text += $"{time} {line}";
+            }
+
+            this.Write(text);
         }
 
         private void SetStatus(string status)
