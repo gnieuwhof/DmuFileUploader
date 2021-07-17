@@ -11,11 +11,17 @@
         // These sample application registration values are available for all online instances.
         private const string CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
 
+
+        private readonly MainFrm mainFrm;
         private readonly HttpClient httpClient;
 
 
-        public LoginFrm(HttpClient httpClient, ConnectionInfo connectionInfo)
+        public LoginFrm(MainFrm mainFrm, 
+            HttpClient httpClient, ConnectionInfo connectionInfo)
         {
+            this.mainFrm = mainFrm ??
+                throw new ArgumentNullException(nameof(mainFrm));
+
             this.httpClient = httpClient ??
                 throw new ArgumentNullException(nameof(httpClient));
 
@@ -61,25 +67,36 @@
             {
                 this.StartProgressBar();
 
+                this.mainFrm.WriteLine("Retrieving OAuth token...");
+
                 Uri resource = NormalizeHostUrl(this.UrlTxt.Text);
+                this.mainFrm.WriteLine($"Absolute URI: {resource.AbsoluteUri}");
+
                 string username = this.UsernameTxt.Text;
                 string password = this.PasswordTxt.Text;
 
+                this.mainFrm.WriteLine("Getting authorization URL...");
                 Uri authorizeUrl = await GetAuthorizationUrl(httpClient, resource);
+                this.mainFrm.WriteLine($"Authorization URL: {authorizeUrl.AbsoluteUri}");
 
+                this.mainFrm.WriteLine("Retrieving token");
                 HttpResponseMessage authResponse = await Authentication.GetAuthResponse(httpClient,
                     authorizeUrl, resource, CLIENT_ID, username, password);
 
+                this.mainFrm.WriteLine($"Status: {authResponse.StatusCode}");
                 if (!authResponse.IsSuccessStatusCode)
                 {
                     this.StopProgressBar();
 
                     OAuthError oAuthError = await Authentication.GetError(authResponse);
 
+                    this.mainFrm.WriteLine($"Error: {oAuthError.ErrorDescription}");
+                    this.mainFrm.WriteLine();
                     MessageBox.Show(oAuthError.ErrorDescription);
                     return;
                 }
 
+                this.mainFrm.WriteLine("Creating Brearer token");
                 var authHeader = await Authentication
                     .GetAuthenticationHeader(authResponse);
 
@@ -93,6 +110,7 @@
 
                 this.DialogResult = DialogResult.OK;
                 this.Close();
+                this.mainFrm.WriteLine("OAuth token created");
             }
             catch (Exception ex)
             {

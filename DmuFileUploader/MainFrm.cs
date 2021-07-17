@@ -37,7 +37,8 @@
         {
             this.WriteLine("Login");
 
-            using (var login = new LoginFrm(this.httpClient, this.connectionInfo))
+            using (var login = new LoginFrm(this,
+                this.httpClient, this.connectionInfo))
             {
                 DialogResult result = login.ShowDialog();
 
@@ -133,12 +134,12 @@
             this.SetStatus("Not connected");
         }
 
-        private void Write(string text)
+        public void Write(string text)
         {
             this.TextTxt.AppendText(text);
         }
 
-        private void WriteLine(string line = "")
+        public void WriteLine(string line = "")
         {
             string text = Environment.NewLine;
 
