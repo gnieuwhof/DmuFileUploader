@@ -32,13 +32,13 @@ namespace DmuFileUploader
             this.MenuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.selectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.uploadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.connectionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loginToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusStrip = new System.Windows.Forms.StatusStrip();
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.TextTxt = new System.Windows.Forms.TextBox();
-            this.uploadToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MenuStrip.SuspendLayout();
             this.StatusStrip.SuspendLayout();
             this.SuspendLayout();
@@ -51,7 +51,7 @@ namespace DmuFileUploader
             this.connectionToolStripMenuItem});
             this.MenuStrip.Location = new System.Drawing.Point(0, 0);
             this.MenuStrip.Name = "MenuStrip";
-            this.MenuStrip.Size = new System.Drawing.Size(800, 28);
+            this.MenuStrip.Size = new System.Drawing.Size(1106, 38);
             this.MenuStrip.TabIndex = 0;
             this.MenuStrip.Text = "Menu Strip";
             // 
@@ -62,20 +62,27 @@ namespace DmuFileUploader
             this.uploadToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(46, 24);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(46, 34);
             this.fileToolStripMenuItem.Text = "&File";
             // 
             // selectToolStripMenuItem
             // 
             this.selectToolStripMenuItem.Name = "selectToolStripMenuItem";
-            this.selectToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.selectToolStripMenuItem.Size = new System.Drawing.Size(141, 26);
             this.selectToolStripMenuItem.Text = "&Select";
             this.selectToolStripMenuItem.Click += new System.EventHandler(this.SelectToolStripMenuItem_Click);
+            // 
+            // uploadToolStripMenuItem
+            // 
+            this.uploadToolStripMenuItem.Name = "uploadToolStripMenuItem";
+            this.uploadToolStripMenuItem.Size = new System.Drawing.Size(141, 26);
+            this.uploadToolStripMenuItem.Text = "&Upload";
+            this.uploadToolStripMenuItem.Click += new System.EventHandler(this.UploadToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(141, 26);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
             // 
@@ -84,13 +91,13 @@ namespace DmuFileUploader
             this.connectionToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.loginToolStripMenuItem});
             this.connectionToolStripMenuItem.Name = "connectionToolStripMenuItem";
-            this.connectionToolStripMenuItem.Size = new System.Drawing.Size(98, 24);
+            this.connectionToolStripMenuItem.Size = new System.Drawing.Size(98, 34);
             this.connectionToolStripMenuItem.Text = "&Connection";
             // 
             // loginToolStripMenuItem
             // 
             this.loginToolStripMenuItem.Name = "loginToolStripMenuItem";
-            this.loginToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
+            this.loginToolStripMenuItem.Size = new System.Drawing.Size(129, 26);
             this.loginToolStripMenuItem.Text = "&Login";
             this.loginToolStripMenuItem.Click += new System.EventHandler(this.LoginToolStripMenuItem_Click);
             // 
@@ -99,16 +106,16 @@ namespace DmuFileUploader
             this.StatusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statusLabel});
-            this.StatusStrip.Location = new System.Drawing.Point(0, 424);
+            this.StatusStrip.Location = new System.Drawing.Point(0, 545);
             this.StatusStrip.Name = "StatusStrip";
-            this.StatusStrip.Size = new System.Drawing.Size(800, 26);
+            this.StatusStrip.Size = new System.Drawing.Size(1106, 33);
             this.StatusStrip.TabIndex = 0;
             this.StatusStrip.Text = "Status Strip";
             // 
             // statusLabel
             // 
             this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(154, 20);
+            this.statusLabel.Size = new System.Drawing.Size(154, 27);
             this.statusLabel.Text = "Status: Not connected";
             // 
             // TextTxt
@@ -118,27 +125,20 @@ namespace DmuFileUploader
             this.TextTxt.CausesValidation = false;
             this.TextTxt.Dock = System.Windows.Forms.DockStyle.Fill;
             this.TextTxt.Font = new System.Drawing.Font("Consolas", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TextTxt.Location = new System.Drawing.Point(0, 28);
+            this.TextTxt.Location = new System.Drawing.Point(0, 48);
             this.TextTxt.Multiline = true;
             this.TextTxt.Name = "TextTxt";
             this.TextTxt.ReadOnly = true;
             this.TextTxt.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.TextTxt.Size = new System.Drawing.Size(800, 396);
+            this.TextTxt.Size = new System.Drawing.Size(1106, 489);
             this.TextTxt.TabIndex = 1;
             this.TextTxt.TabStop = false;
-            // 
-            // uploadToolStripMenuItem
-            // 
-            this.uploadToolStripMenuItem.Name = "uploadToolStripMenuItem";
-            this.uploadToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
-            this.uploadToolStripMenuItem.Text = "&Upload";
-            this.uploadToolStripMenuItem.Click += new System.EventHandler(this.UploadToolStripMenuItem_Click);
             // 
             // MainFrm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(885, 462);
             this.Controls.Add(this.TextTxt);
             this.Controls.Add(this.StatusStrip);
             this.Controls.Add(this.MenuStrip);

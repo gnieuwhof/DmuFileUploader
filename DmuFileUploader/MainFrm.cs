@@ -5,6 +5,7 @@
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using System.Drawing;
     using System.Globalization;
     using System.IO;
     using System.IO.Compression;
@@ -35,16 +36,14 @@
 
         private void MainFrm_Load(object sender, EventArgs e)
         {
+            this.Size = new Size(750, 500);
+
             var startText = new[]
             {
                 Program.Title,
                 "",
-                "This tool can be used to upload a file created with the " +
+                "This tool can be used to upload files created with the " +
                 "\"Common Data Service Configuration Migration\" tool from the Dynamics 365 SDK.",
-                "",
-                "NOTE!!!",
-                "The primary key of the records will not be changed.",
-                "This could (somewhat) decrease Dynamics performace.",
                 ""
             };
 
@@ -134,7 +133,8 @@
 
                     string uri = this.connectionInfo.Resource.AbsoluteUri;
                     string username = this.connectionInfo.Username;
-                    DateTime validTo = this.connectionInfo.ValidTo;
+                    DateTime utcValidTo = this.connectionInfo.UtcValidTo;
+                    DateTime localValidTo = utcValidTo.ToLocalTime();
 
                     this.SetStatus($"Connected to {uri}");
 
@@ -142,7 +142,7 @@
                     this.WriteLine("Connection info:");
                     this.WriteLine($"Host: {uri}");
                     this.WriteLine($"User: {username}");
-                    this.WriteLine($"Expires: {validTo}");
+                    this.WriteLine($"Expires: {localValidTo}");
                     this.WriteLine();
                 }
                 else
@@ -235,8 +235,10 @@
 
                 try
                 {
-                    this.WriteLine($"Found {schema.entity.Length} entities in the schema.");
-                    this.WriteLine($"Found {schema.entity.Length} entities in the data.");
+                    string ies = schema.entity.Length == 1 ? "y" : "ies";
+                    this.WriteLine($"Found {schema.entity.Length} entit{ies} in the schema.");
+                    ies = data.entity.Length == 1 ? "y" : "ies";
+                    this.WriteLine($"Found {data.entity.Length} entit{ies} in the data.");
                     foreach (entitiesEntity entitiesEntity in data.entity)
                     {
                         Schema.entitiesEntity entity = schema.entity

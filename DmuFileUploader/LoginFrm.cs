@@ -79,7 +79,7 @@
                 Uri authorizeUrl = await GetAuthorizationUrl(httpClient, resource);
                 this.mainFrm.WriteLine($"Authorization URL: {authorizeUrl.AbsoluteUri}");
 
-                this.mainFrm.WriteLine("Retrieving token");
+                this.mainFrm.WriteLine("Retrieving token.");
                 HttpResponseMessage authResponse = await Authentication.GetAuthResponse(httpClient,
                     authorizeUrl, resource, CLIENT_ID, username, password);
 
@@ -96,13 +96,13 @@
                     return;
                 }
 
-                this.mainFrm.WriteLine("Creating Brearer token");
+                this.mainFrm.WriteLine("Creating Brearer token.");
                 var authHeader = await Authentication
                     .GetAuthenticationHeader(authResponse);
 
                 string token = $"{authHeader}".Substring("Bearer ".Length);
 
-                DateTime validTo = JWTService.GetValidTo(token);
+                DateTime validTo = JWTService.GetUtcValidTo(token);
 
                 this.Info = new ConnectionInfo(
                     resource,
@@ -114,7 +114,7 @@
 
                 this.DialogResult = DialogResult.OK;
                 this.Close();
-                this.mainFrm.WriteLine("OAuth token created");
+                this.mainFrm.WriteLine("OAuth token created.");
             }
             catch (Exception ex)
             {

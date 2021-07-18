@@ -1,30 +1,18 @@
 ﻿namespace DmuFileUploader
 {
-    using JWT;
-    using JWT.Algorithms;
-    using JWT.Serializers;
-    using Newtonsoft.Json.Linq;
     using System;
 
     public static class JWTService
     {
-        public static DateTime GetValidTo(string accessToken)
+        public static DateTime GetUtcValidTo(string accessToken)
         {
-            var serializer = new JsonNetSerializer();
-            var provider = new UtcDateTimeProvider();
-            var validator = new JwtValidator(serializer, provider);
+            var jsonWebToken = JsonWebToken.Create(accessToken);
 
-            var urlEncoder = new JwtBase64UrlEncoder();
-            var algorithm = new HMACSHA256Algorithm();
-            var decoder = new JwtDecoder(serializer, validator, urlEncoder, algorithm);
-
-            JToken token = decoder.DecodeToObject<JToken>(accessToken);
-
-            long timestamp = token.Value<long>("exp");
+            long timestamp = jsonWebToken.GetValue<long>("exp");
 
             DateTime utcDateTime = UnixTimestampToUtcDateTime(timestamp);
 
-            return utcDateTime.ToLocalTime();
+            return utcDateTime;
         }
 
         public static DateTime UnixTimestampToUtcDateTime(long unixTimestamp)

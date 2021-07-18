@@ -25,7 +25,7 @@
             this.AuthHeader = authHeader ??
                 throw new ArgumentNullException(nameof(authHeader));
 
-            this.ValidTo = validTo;
+            this.UtcValidTo = validTo;
         }
 
 
@@ -37,6 +37,6 @@
 
         public AuthenticationHeaderValue AuthHeader { get; }
 
-        public DateTime ValidTo { get; set; }
+        public DateTime UtcValidTo { get; set; }
     }
 }

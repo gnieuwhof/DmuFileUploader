@@ -60,6 +60,7 @@
     <Compile Include="EntityDefinition.cs" />
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="FileHelper.cs" />
+    <Compile Include="JsonWebToken.cs" />
     <Compile Include="JwtService.cs" />
     <Compile Include="LoginFrm.cs">
       <SubType>Form</SubType>
