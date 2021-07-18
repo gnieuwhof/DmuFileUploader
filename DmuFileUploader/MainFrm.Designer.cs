@@ -70,14 +70,14 @@ namespace DmuFileUploader
             this.selectToolStripMenuItem.Name = "selectToolStripMenuItem";
             this.selectToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             this.selectToolStripMenuItem.Text = "&Select";
-            this.selectToolStripMenuItem.Click += new System.EventHandler(this.selectToolStripMenuItem_Click);
+            this.selectToolStripMenuItem.Click += new System.EventHandler(this.SelectToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
             this.exitToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             this.exitToolStripMenuItem.Text = "E&xit";
-            this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
+            this.exitToolStripMenuItem.Click += new System.EventHandler(this.ExitToolStripMenuItem_Click);
             // 
             // connectionToolStripMenuItem
             // 
@@ -92,7 +92,7 @@ namespace DmuFileUploader
             this.loginToolStripMenuItem.Name = "loginToolStripMenuItem";
             this.loginToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             this.loginToolStripMenuItem.Text = "&Login";
-            this.loginToolStripMenuItem.Click += new System.EventHandler(this.loginToolStripMenuItem_Click);
+            this.loginToolStripMenuItem.Click += new System.EventHandler(this.LoginToolStripMenuItem_Click);
             // 
             // StatusStrip
             // 
@@ -132,7 +132,7 @@ namespace DmuFileUploader
             this.uploadToolStripMenuItem.Name = "uploadToolStripMenuItem";
             this.uploadToolStripMenuItem.Size = new System.Drawing.Size(224, 26);
             this.uploadToolStripMenuItem.Text = "&Upload";
-            this.uploadToolStripMenuItem.Click += new System.EventHandler(this.uploadToolStripMenuItem_Click);
+            this.uploadToolStripMenuItem.Click += new System.EventHandler(this.UploadToolStripMenuItem_Click);
             // 
             // MainFrm
             // 

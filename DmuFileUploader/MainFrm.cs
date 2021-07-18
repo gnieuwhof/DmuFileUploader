@@ -33,19 +33,95 @@
             this.Text = Program.Title;
         }
 
-        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        private void MainFrm_Load(object sender, EventArgs e)
+        {
+            var startText = new[]
+            {
+                Program.Title,
+                "",
+                "This tool can be used to upload a file created with the " +
+                "\"Common Data Service Configuration Migration\" tool from the Dynamics 365 SDK.",
+                "",
+                "NOTE!!!",
+                "The primary key of the records will not be changed.",
+                "This could (somewhat) decrease Dynamics performace.",
+                ""
+            };
+
+            string text = string.Join(Environment.NewLine, startText);
+
+            this.Write(text);
+
+            this.SetStatus("Not connected");
+        }
+
+        private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Application.Exit();
         }
 
-        private void loginToolStripMenuItem_Click(object sender, EventArgs e)
+        private void LoginToolStripMenuItem_Click(object sender, EventArgs e)
         {
             this.Login();
         }
 
+        private void SelectToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.SelectFile();
+        }
+
+        private async void UploadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!File.Exists(this.file))
+            {
+                this.SelectFile();
+
+                if (!File.Exists(this.file))
+                {
+                    this.WriteLine("Upload cancelled, no file selected.");
+                    return;
+                }
+            }
+
+            if (this.connectionInfo == null)
+            {
+                this.Login();
+
+                if (this.connectionInfo == null)
+                {
+                    this.WriteLine("Upload cancelled, not connected.");
+                    return;
+                }
+            }
+
+            var lines = new[]
+            {
+                "Upload file:",
+                this.file,
+                "",
+                "To Dynamics 365 instance:",
+                $"{this.connectionInfo.Resource }"
+            };
+
+            string message = string.Join(Environment.NewLine, lines);
+
+            DialogResult result = MessageBox.Show(message,
+                "Upload to Dynamics 365", MessageBoxButtons.OKCancel);
+
+            if (result == DialogResult.OK)
+            {
+                await this.UploadFile();
+            }
+            else
+            {
+                this.WriteLine("Upload cancelled.");
+            }
+        }
+
+
         private DialogResult Login()
         {
-            this.WriteLine("Login");
+            this.WriteLine("Opening login form.");
 
             using (var login = new LoginFrm(this,
                 this.httpClient, this.connectionInfo))
@@ -63,7 +139,7 @@
                     this.SetStatus($"Connected to {uri}");
 
                     this.WriteLine();
-                    this.WriteLine("Connected");
+                    this.WriteLine("Connection info:");
                     this.WriteLine($"Host: {uri}");
                     this.WriteLine($"User: {username}");
                     this.WriteLine($"Expires: {validTo}");
@@ -71,7 +147,7 @@
                 }
                 else
                 {
-                    this.WriteLine("Login cancelled");
+                    this.WriteLine("Login cancelled.");
                     this.WriteLine();
                 }
 
@@ -79,9 +155,9 @@
             }
         }
 
-        private void selectToolStripMenuItem_Click(object sender, EventArgs e)
+        private bool SelectFile()
         {
-            this.WriteLine("Select file");
+            this.WriteLine("Opening file selector.");
 
             var openFileDialog = new OpenFileDialog
             {
@@ -96,54 +172,13 @@
                 this.WriteLine($"Selected file: {this.file}");
                 this.WriteLine();
 
-                if (this.connectionInfo == null)
-                {
-                    Login();
-
-                    if(this.connectionInfo == null)
-                    {
-                        return;
-                    }
-                }
-
-                if(this.connectionInfo != null)
-                {
-                    this.WriteLine("");
-                    this.WriteLine("BUSINESS!!");
-                    this.WriteLine("BUSINESS!!");
-                    this.WriteLine("BUSINESS!!");
-                    this.WriteLine("BUSINESS!!");
-                    this.WriteLine("BUSINESS!!");
-                    this.WriteLine("");
-                }
+                return true;
             }
-            else
-            {
-                this.WriteLine("Selecting file cancelled");
-                this.WriteLine();
-            }
-        }
 
-        private void MainFrm_Load(object sender, EventArgs e)
-        {
-            var startText = new[]
-            {
-                Program.Title,
-                "",
-                "This tool can be used to upload a file created with the " +
-                "\"Common Data Service Configuration Migration\" tool from the Dynamics 365 SDK.",
-                "",
-                "NOTE!!!",
-                "The primary key of the records will not be changed.",
-                "This could decrease performace.",
-                ""
-            };
+            this.WriteLine("Selecting file cancelled.");
+            this.WriteLine();
 
-            string text = string.Join(Environment.NewLine, startText);
-
-            this.Write(text);
-
-            this.SetStatus("Not connected");
+            return false;
         }
 
         public void Write(string text)
@@ -172,18 +207,21 @@
             this.statusLabel.Text = $"{time} Status: {status}";
         }
 
-        private async void uploadToolStripMenuItem_Click(object sender, EventArgs e)
+        private async Task UploadFile()
         {
             string dataFile = this.file;
 
             string tempFolder = $"{Guid.NewGuid()}";
 
+            this.WriteLine($"Extracting zip file to temp folder: {tempFolder}");
             ZipFile.ExtractToDirectory(dataFile, tempFolder);
 
+            this.WriteLine("Deserializing data schema.");
             var schema = FileHelper.DeserializeXmlFile<Schema.entities>(
                 Path.Combine(tempFolder, "data_schema.xml"));
 
-            var data = FileHelper.DeserializeXmlFile<Data.entities>(
+            this.WriteLine("Deserializing data.");
+            var data = FileHelper.DeserializeXmlFile<entities>(
                 Path.Combine(tempFolder, "data.xml"));
 
             AuthenticationHeaderValue authHeader = this.connectionInfo.AuthHeader;
@@ -193,60 +231,76 @@
             {
                 var oDataClient = new ODataClient(httpClient);
 
+                var resourcePathCache = new Dictionary<string, string>();
+
                 try
                 {
-                    foreach (Schema.entitiesEntity entity in schema.entity)
+                    this.WriteLine($"Found {schema.entity.Length} entities in the schema.");
+                    this.WriteLine($"Found {schema.entity.Length} entities in the data.");
+                    foreach (entitiesEntity entitiesEntity in data.entity)
                     {
+                        Schema.entitiesEntity entity = schema.entity
+                            .FirstOrDefault(e => e.name == entitiesEntity.name);
+
+                        if(entity == null)
+                        {
+                            this.WriteLine($"Could not find the entity {data.entity} in the schema.");
+                            continue;
+                        }
+
+                        this.WriteLine($"Getting resource path for entity: {entity.name}");
                         var entityDefinition = await GetEntityDefinition(oDataClient, entity.name);
 
                         string resourcePath = entityDefinition.ResourcePath;
+                        this.WriteLine($"Resource path: {resourcePath}");
 
-                        foreach(entitiesEntity entitiesEntity in data.entity)
+                        entitiesEntityRecord[] records = entitiesEntity.records;
+                        this.WriteLine($"Found {records.Length} records to process.");
+
+                        IEnumerable<Guid> ids = records.Select(r => new Guid(r.id));
+
+                        IEnumerable<string> existingIds = await GetIds(
+                            oDataClient, resourcePath, entity.primaryidfield, ids);
+
+                        foreach (entitiesEntityRecord record in records)
                         {
-                            entitiesEntityRecord[] records = entitiesEntity.records;
-
-                            IEnumerable<Guid> ids = records.Select(r => new Guid(r.id));
-
-                            IEnumerable<string> existingIds = await GetIds(
-                                oDataClient, resourcePath, entity.primaryidfield, ids);
-
-                            foreach (entitiesEntityRecord record in records)
+                            try
                             {
-                                try
+                                bool update = existingIds.Contains(record.id);
+
+                                this.WriteLine($"{(update ? "Updating" : "Inserting")} {entity.displayname} record with ID: {record.id}");
+
+                                string json = await ToJson(oDataClient,
+                                    entityDefinition, entity, record, resourcePathCache);
+
+                                HttpResponseMessage response = update
+                                    ? await oDataClient.PatchAsync(resourcePath, json, new Guid(record.id))
+                                    : await oDataClient.PostAsync(resourcePath, json);
+
+                                if (!response.IsSuccessStatusCode)
                                 {
-                                    bool update = existingIds.Contains(record.id);
-
-                                    this.WriteLine($"{(update ? "Updating" : "Inserting")} {entity.displayname} record with ID: {record.id}");
-
-                                    string json = await ToJson(oDataClient, entityDefinition, entity, record);
-
-                                    HttpResponseMessage response = update
-                                        ? await oDataClient.PatchAsync(resourcePath, json, new Guid(record.id))
-                                        : await oDataClient.PostAsync(resourcePath, json);
-
-                                    if (!response.IsSuccessStatusCode)
-                                    {
-                                        string content = await response.Content.ReadAsStringAsync();
-                                        this.WriteLine(content);
-                                    }
+                                    string content = await response.Content.ReadAsStringAsync();
+                                    this.WriteLine(content);
                                 }
-                                catch (Exception ex)
-                                {
-                                    this.WriteLine("Exception!");
-                                    this.WriteLine(ex.Message);
-                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                this.WriteLine("An exception occurred!");
+                                this.WriteLine(ex.Message);
                             }
                         }
                     }
+                    this.WriteLine($"Done processing all entities.");
                 }
                 catch (Exception ex)
                 {
                     this.WriteLine(ex.ToString());
                 }
             }
+
+            this.WriteLine("Removing temp folder");
+            Directory.Delete(tempFolder, true);
         }
-
-
 
         private static async Task<IEnumerable<string>> GetIds(ODataClient oDataClient,
             string resourcePath, string idField, IEnumerable<Guid> ids)
@@ -286,7 +340,8 @@
             ODataClient oDataClient,
             EntityDefinition entityDefinition,
             Schema.entitiesEntity entity,
-            entitiesEntityRecord record
+            entitiesEntityRecord record,
+            Dictionary<string, string> resourcePathCache
             )
         {
             var dict = new Dictionary<string, object>();
@@ -326,12 +381,33 @@
                         break;
 
                     case "entityreference":
+                        string referencedEntity = (field.lookupentity != null)
+                            ? field.lookupentity
+                            : fieldInfo.lookupType;
+
                         ManyToOneRelationship relation = entityDefinition.ManyToOneRelationships
-                            ?.FirstOrDefault(r => r.ReferencedEntity == field.lookupentity && r.ReferencingAttribute == fieldName);
+                            ?.FirstOrDefault(r => r.ReferencedEntity == referencedEntity && r.ReferencingAttribute == fieldName);
                         string navigationProperty = relation?.ReferencingEntityNavigationPropertyName;
                         fieldName = $"{navigationProperty}@odata.bind";
-                        string resourcePath = await GetResourcePath(oDataClient, field.lookupentity);
+
+                        string resourcePath;
+                        if (resourcePathCache.ContainsKey(referencedEntity))
+                        {
+                            resourcePath = resourcePathCache[referencedEntity];
+                        }
+                        else
+                        {
+                            resourcePath = await GetResourcePath(oDataClient, referencedEntity);
+                            resourcePathCache.Add(referencedEntity, resourcePath);
+                        }
+
                         string id = field.value;
+
+                        if (string.IsNullOrWhiteSpace(id))
+                        {
+                            continue;
+                        }
+
                         val = $"/{resourcePath}({id})";
                         break;
 
