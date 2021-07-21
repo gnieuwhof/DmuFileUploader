@@ -229,7 +229,7 @@
 
             using (var httpClient = new ODataHttpClient(endpointUri, authHeader))
             {
-                var oDataClient = new ODataClient(httpClient);
+                var oDataClient = new ODataClient(httpClient, this.WriteLine);
 
                 var resourcePathCache = new Dictionary<string, string>();
 

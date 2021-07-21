@@ -11,12 +11,19 @@
 
     public class ODataClient
     {
+        private const int TOO_MANY_REQUESTS = 429;
+
         private readonly HttpClient httpClient;
+        private readonly Action<string> WriteLine;
 
 
-        public ODataClient(ODataHttpClient httpClient)
+        public ODataClient(ODataHttpClient httpClient, Action<string> writeLine)
         {
-            this.httpClient = httpClient;
+            this.httpClient = httpClient ??
+                throw new ArgumentNullException(nameof(httpClient));
+
+            this.WriteLine = writeLine ??
+                throw new ArgumentNullException(nameof(writeLine));
         }
 
 
@@ -113,8 +120,14 @@
             return CallAsync(HttpMethod.Get, requestUri);
         }
 
-        private async Task<HttpResponseMessage> CallAsync(
+        private Task<HttpResponseMessage> CallAsync(
             HttpMethod method, string requestUri, string jsonContent = null)
+        {
+            return InnerCallAsync(method, requestUri, jsonContent);
+        }
+
+        private async Task<HttpResponseMessage> InnerCallAsync(
+            HttpMethod method, string requestUri, string jsonContent, int retryCount = 0)
         {
             var request = new HttpRequestMessage(method, requestUri);
 
@@ -125,27 +138,40 @@
 
             var response = await this.httpClient.SendAsync(request);
 
-            int tooManyRequests = 429;
-            if ((int)response.StatusCode == tooManyRequests)
+            if ((int)response.StatusCode == TOO_MANY_REQUESTS)
             {
-                int delaySeconds = 10;
+                ++retryCount;
+                int delaySeconds = GetDelaySeconds(response, retryCount);
 
-                response.Headers.TryGetValues(
-                    "Retry-After", out IEnumerable<string> retryAfterHeaders);
-
-                string retryAfter = retryAfterHeaders?.FirstOrDefault();
-
-                if (int.TryParse(retryAfter, out int retryAfterSeconds))
-                {
-                    delaySeconds = retryAfterSeconds;
-                }
+                this.WriteLine($"Too many requests, waiting {delaySeconds} seconds...");
 
                 await Task.Delay(delaySeconds * 1000);
 
-                response = await CallAsync(method, requestUri, jsonContent);
+                response = await InnerCallAsync(method, requestUri, jsonContent, retryCount);
             }
 
             return response;
+        }
+
+        private static int GetDelaySeconds(HttpResponseMessage response, int retryCount)
+        {
+            int delaySeconds;
+
+            response.Headers.TryGetValues(
+                "Retry-After", out IEnumerable<string> retryAfterHeaders);
+
+            string retryAfter = retryAfterHeaders?.FirstOrDefault();
+
+            if (int.TryParse(retryAfter, out int retryAfterSeconds))
+            {
+                delaySeconds = retryAfterSeconds;
+            }
+            else
+            {
+                delaySeconds = (int)Math.Pow(2, retryCount);
+            }
+
+            return delaySeconds;
         }
     }
 }
