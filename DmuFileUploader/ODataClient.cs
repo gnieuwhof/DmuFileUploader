@@ -125,6 +125,26 @@
 
             var response = await this.httpClient.SendAsync(request);
 
+            int tooManyRequests = 429;
+            if ((int)response.StatusCode == tooManyRequests)
+            {
+                int delaySeconds = 10;
+
+                response.Headers.TryGetValues(
+                    "Retry-After", out IEnumerable<string> retryAfterHeaders);
+
+                string retryAfter = retryAfterHeaders?.FirstOrDefault();
+
+                if (int.TryParse(retryAfter, out int retryAfterSeconds))
+                {
+                    delaySeconds = retryAfterSeconds;
+                }
+
+                await Task.Delay(delaySeconds * 1000);
+
+                response = await CallAsync(method, requestUri, jsonContent);
+            }
+
             return response;
         }
     }
