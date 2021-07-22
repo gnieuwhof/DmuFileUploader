@@ -10,6 +10,7 @@
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -17,6 +18,8 @@
 
     public partial class MainFrm : Form
     {
+        private const int BACTCH_SIZE = 10;
+
         private readonly HttpClient httpClient;
 
         private ConnectionInfo connectionInfo;
@@ -26,6 +29,8 @@
 
         public MainFrm(HttpClient httpClient)
         {
+            ServicePointManager.DefaultConnectionLimit = BACTCH_SIZE;
+
             this.httpClient = httpClient ??
                 throw new ArgumentNullException(nameof(httpClient));
 
@@ -209,32 +214,36 @@
 
         private async Task UploadFile()
         {
+            this.selectToolStripMenuItem.Enabled = false;
+            this.uploadToolStripMenuItem.Enabled = false;
+            this.loginToolStripMenuItem.Enabled = false;
+
             string dataFile = this.file;
 
             string tempFolder = $"{Guid.NewGuid()}";
 
-            this.WriteLine($"Extracting zip file to temp folder: {tempFolder}");
-            ZipFile.ExtractToDirectory(dataFile, tempFolder);
-
-            this.WriteLine("Deserializing data schema.");
-            var schema = FileHelper.DeserializeXmlFile<Schema.entities>(
-                Path.Combine(tempFolder, "data_schema.xml"));
-
-            this.WriteLine("Deserializing data.");
-            var data = FileHelper.DeserializeXmlFile<entities>(
-                Path.Combine(tempFolder, "data.xml"));
-
-            AuthenticationHeaderValue authHeader = this.connectionInfo.AuthHeader;
-            Uri endpointUri = new Uri(this.connectionInfo.Resource, "api/data/v9.2/");
-
-            using (var httpClient = new ODataHttpClient(endpointUri, authHeader))
+            try
             {
-                var oDataClient = new ODataClient(httpClient, this.WriteLine);
+                this.WriteLine($"Extracting zip file to temp folder: {tempFolder}");
+                ZipFile.ExtractToDirectory(dataFile, tempFolder);
 
-                var resourcePathCache = new Dictionary<string, string>();
+                this.WriteLine("Deserializing data schema.");
+                var schema = FileHelper.DeserializeXmlFile<Schema.entities>(
+                    Path.Combine(tempFolder, "data_schema.xml"));
 
-                try
+                this.WriteLine("Deserializing data.");
+                var data = FileHelper.DeserializeXmlFile<entities>(
+                    Path.Combine(tempFolder, "data.xml"));
+
+                AuthenticationHeaderValue authHeader = this.connectionInfo.AuthHeader;
+                Uri endpointUri = new Uri(this.connectionInfo.Resource, "api/data/v9.2/");
+
+                using (var httpClient = new ODataHttpClient(endpointUri, authHeader))
                 {
+                    var oDataClient = new ODataClient(httpClient, this.WriteLine);
+
+                    var resourcePathCache = new Dictionary<string, string>();
+
                     string ies = schema.entity.Length == 1 ? "y" : "ies";
                     this.WriteLine($"Found {schema.entity.Length} entit{ies} in the schema.");
                     ies = data.entity.Length == 1 ? "y" : "ies";
@@ -244,14 +253,15 @@
                         Schema.entitiesEntity entity = schema.entity
                             .FirstOrDefault(e => e.name == entitiesEntity.name);
 
-                        if(entity == null)
+                        if (entity == null)
                         {
                             this.WriteLine($"Could not find the entity {data.entity} in the schema.");
                             continue;
                         }
 
                         this.WriteLine($"Getting resource path for entity: {entity.name}");
-                        var entityDefinition = await GetEntityDefinition(oDataClient, entity.name);
+                        EntityDefinition entityDefinition =
+                            await GetEntityDefinition(oDataClient, entity.name);
 
                         string resourcePath = entityDefinition.ResourcePath;
                         this.WriteLine($"Resource path: {resourcePath}");
@@ -264,44 +274,82 @@
                         IEnumerable<string> existingIds = await GetIds(
                             oDataClient, resourcePath, entity.primaryidfield, ids);
 
-                        foreach (entitiesEntityRecord record in records)
+                        var helper = new UploadHelper(
+                            oDataClient,
+                            entity,
+                            entityDefinition,
+                            resourcePath,
+                            existingIds
+                            );
+
+                        var batches = records.Batch(BACTCH_SIZE);
+
+                        foreach (IEnumerable<entitiesEntityRecord> batch in batches)
                         {
-                            try
-                            {
-                                bool update = existingIds.Contains(record.id);
-
-                                this.WriteLine($"{(update ? "Updating" : "Inserting")} {entity.displayname} record with ID: {record.id}");
-
-                                string json = await ToJson(oDataClient,
-                                    entityDefinition, entity, record, resourcePathCache);
-
-                                HttpResponseMessage response = update
-                                    ? await oDataClient.PatchAsync(resourcePath, json, new Guid(record.id))
-                                    : await oDataClient.PostAsync(resourcePath, json);
-
-                                if (!response.IsSuccessStatusCode)
-                                {
-                                    string content = await response.Content.ReadAsStringAsync();
-                                    this.WriteLine(content);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                this.WriteLine("An exception occurred!");
-                                this.WriteLine(ex.Message);
-                            }
+                            await ProcessBatch(helper, batch);
                         }
                     }
                     this.WriteLine($"Done processing all entities.");
                 }
-                catch (Exception ex)
-                {
-                    this.WriteLine(ex.ToString());
-                }
+
+                this.WriteLine("Removing temp folder");
+                Directory.Delete(tempFolder, true);
+            }
+            catch (Exception ex)
+            {
+                this.WriteLine(ex.ToString());
             }
 
-            this.WriteLine("Removing temp folder");
-            Directory.Delete(tempFolder, true);
+            this.selectToolStripMenuItem.Enabled = true;
+            this.uploadToolStripMenuItem.Enabled = true;
+            this.loginToolStripMenuItem.Enabled = true;
+        }
+
+        private async Task ProcessBatch(UploadHelper helper,
+            IEnumerable<entitiesEntityRecord> records)
+        {
+            var tasks = new List<Task>();
+
+            foreach (entitiesEntityRecord record in records)
+            {
+                Task task = this.ProcessRecord(helper, record);
+
+                tasks.Add(task);
+            }
+
+            foreach (Task task in tasks)
+            {
+                await task;
+            }
+        }
+
+        private async Task ProcessRecord(
+            UploadHelper helper, entitiesEntityRecord record)
+        {
+            try
+            {
+                bool update = helper.ExistingIds.Contains(record.id);
+
+                string json = await ToJson(helper, record);
+
+                HttpResponseMessage response = update
+                    ? await helper.Client.PatchAsync(helper.ResourcePath, json, new Guid(record.id))
+                    : await helper.Client.PostAsync(helper.ResourcePath, json);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    string content = await response.Content.ReadAsStringAsync();
+                    this.WriteLine(content);
+                }
+                else
+                {
+                    this.WriteLine($"{(update ? "Updated" : "Inserted")} {helper.Entity.displayname} record with ID: {record.id}");
+                }
+            }
+            catch (Exception ex)
+            {
+                this.WriteLine($"Exception: {ex.Message}");
+            }
         }
 
         private static async Task<IEnumerable<string>> GetIds(ODataClient oDataClient,
@@ -339,12 +387,7 @@
 
 
         private static async Task<string> ToJson(
-            ODataClient oDataClient,
-            EntityDefinition entityDefinition,
-            Schema.entitiesEntity entity,
-            entitiesEntityRecord record,
-            Dictionary<string, string> resourcePathCache
-            )
+            UploadHelper helper, entitiesEntityRecord record)
         {
             var dict = new Dictionary<string, object>();
 
@@ -356,7 +399,7 @@
                 }
 
                 Schema.entitiesEntityField fieldInfo =
-                    entity.fields.FirstOrDefault(f => f.name == field.name);
+                    helper.Entity.fields.FirstOrDefault(f => f.name == field.name);
 
                 if (fieldInfo == null)
                 {
@@ -387,20 +430,20 @@
                             ? field.lookupentity
                             : fieldInfo.lookupType;
 
-                        ManyToOneRelationship relation = entityDefinition.ManyToOneRelationships
+                        ManyToOneRelationship relation = helper.Definition.ManyToOneRelationships
                             ?.FirstOrDefault(r => r.ReferencedEntity == referencedEntity && r.ReferencingAttribute == fieldName);
                         string navigationProperty = relation?.ReferencingEntityNavigationPropertyName;
                         fieldName = $"{navigationProperty}@odata.bind";
 
                         string resourcePath;
-                        if (resourcePathCache.ContainsKey(referencedEntity))
+                        if (helper.ResourcePathCache.ContainsKey(referencedEntity))
                         {
-                            resourcePath = resourcePathCache[referencedEntity];
+                            resourcePath = helper.ResourcePathCache[referencedEntity];
                         }
                         else
                         {
-                            resourcePath = await GetResourcePath(oDataClient, referencedEntity);
-                            resourcePathCache.Add(referencedEntity, resourcePath);
+                            resourcePath = await GetResourcePath(helper.Client, referencedEntity);
+                            helper.ResourcePathCache.TryAdd(referencedEntity, resourcePath);
                         }
 
                         string id = field.value;

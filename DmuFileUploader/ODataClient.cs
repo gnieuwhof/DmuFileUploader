@@ -168,6 +168,7 @@
             }
             else
             {
+                // Exponentially increase the delay.
                 delaySeconds = (int)Math.Pow(2, retryCount);
             }
 
