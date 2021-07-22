@@ -255,7 +255,7 @@
 
                         if (entity == null)
                         {
-                            this.WriteLine($"Could not find the entity {data.entity} in the schema.");
+                            this.WriteLine($"Could not find the entity '{data.entity}' in the schema.");
                             continue;
                         }
 
@@ -288,11 +288,16 @@
                         {
                             await ProcessBatch(helper, batch);
                         }
+
+                        this.WriteLine($"Done processing entity: {entity.name}.");
                     }
-                    this.WriteLine($"Done processing all entities.");
+
+                    string fileName = Path.GetFileName(this.file);
+
+                    this.WriteLine($"Done processing file: {fileName}.");
                 }
 
-                this.WriteLine("Removing temp folder");
+                this.WriteLine($"Removing temp folder: {tempFolder}");
                 Directory.Delete(tempFolder, true);
             }
             catch (Exception ex)
