@@ -18,7 +18,7 @@
 
     public partial class MainFrm : Form
     {
-        private const int BACTCH_SIZE = 1;
+        private const int BACTCH_SIZE = 10;
 
         private readonly HttpClient httpClient;
 
