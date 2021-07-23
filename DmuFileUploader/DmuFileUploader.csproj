@@ -55,6 +55,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncLock.cs" />
     <Compile Include="Authentication.cs" />
     <Compile Include="ConnectionInfo.cs" />
     <Compile Include="EntityDefinition.cs" />

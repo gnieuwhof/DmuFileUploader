@@ -9,7 +9,7 @@
     public partial class LoginFrm : Form
     {
         // These sample application registration values are available for all online instances.
-        private const string CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
+        public const string CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
 
 
         private readonly MainFrm mainFrm;
@@ -100,20 +100,17 @@
                 var authHeader = await Authentication
                     .GetAuthenticationHeader(authResponse);
 
-                string token = $"{authHeader}".Substring("Bearer ".Length);
-
-                DateTime validTo = JWTService.GetUtcValidTo(token);
-
                 this.Info = new ConnectionInfo(
                     resource,
+                    authorizeUrl,
                     username,
                     password,
-                    authHeader,
-                    validTo
+                    authHeader
                     );
 
                 this.DialogResult = DialogResult.OK;
                 this.Close();
+
                 this.mainFrm.WriteLine("OAuth token created.");
             }
             catch (Exception ex)

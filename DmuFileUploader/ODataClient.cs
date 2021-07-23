@@ -7,6 +7,7 @@
     using System.Linq;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
 
     public class ODataClient
@@ -14,13 +15,20 @@
         private const int TOO_MANY_REQUESTS = 429;
 
         private readonly HttpClient httpClient;
+        private readonly ConnectionInfo connectionInfo;
         private readonly Action<string> WriteLine;
+        private readonly SemaphoreSlim semaphore =
+            AsyncLock.CreateSemaphore();
 
 
-        public ODataClient(ODataHttpClient httpClient, Action<string> writeLine)
+        public ODataClient(ODataHttpClient httpClient,
+            ConnectionInfo connectionInfo, Action<string> writeLine)
         {
             this.httpClient = httpClient ??
                 throw new ArgumentNullException(nameof(httpClient));
+
+            this.connectionInfo = connectionInfo ??
+                throw new ArgumentNullException(nameof(connectionInfo));
 
             this.WriteLine = writeLine ??
                 throw new ArgumentNullException(nameof(writeLine));
@@ -129,6 +137,8 @@
         private async Task<HttpResponseMessage> InnerCallAsync(
             HttpMethod method, string requestUri, string jsonContent, int retryCount = 0)
         {
+            await this.CheckToken();
+
             var request = new HttpRequestMessage(method, requestUri);
 
             if (jsonContent != null)
@@ -143,14 +153,36 @@
                 ++retryCount;
                 int delaySeconds = GetDelaySeconds(response, retryCount);
 
-                this.WriteLine($"Too many requests, waiting {delaySeconds} seconds...");
+                this.WriteLine($"Too many requests, waiting {delaySeconds} seconds (retry count: {retryCount}).");
 
-                await Task.Delay(delaySeconds * 1000);
+                await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
 
                 response = await InnerCallAsync(method, requestUri, jsonContent, retryCount);
             }
 
             return response;
+        }
+
+        private async Task CheckToken()
+        {
+            using (await AsyncLock.Enter(semaphore))
+            {
+                if (!this.connectionInfo.IsValid(TimeSpan.FromMinutes(1)))
+                {
+                    var header = await Authentication.GetAuthenticationHeader(
+                        this.httpClient,
+                        this.connectionInfo.AuthorizeUrl,
+                        this.connectionInfo.Resource,
+                        LoginFrm.CLIENT_ID,
+                        this.connectionInfo.Username,
+                        this.connectionInfo.Password
+                        );
+
+                    this.connectionInfo.SetHeader(header);
+
+                    this.WriteLine("New OAuth token retrieved.");
+                }
+            }
         }
 
         private static int GetDelaySeconds(HttpResponseMessage response, int retryCount)
