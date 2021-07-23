@@ -92,7 +92,7 @@
 
                     this.mainFrm.WriteLine($"Error: {oAuthError.ErrorDescription}");
                     this.mainFrm.WriteLine();
-                    MessageBox.Show(oAuthError.ErrorDescription);
+                    Error(oAuthError.ErrorDescription);
                     return;
                 }
 
@@ -117,7 +117,7 @@
             {
                 this.StopProgressBar();
 
-                MessageBox.Show(ex.InnerException?.Message ?? ex.Message);
+                Error(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
@@ -133,9 +133,9 @@
             this.ProgressBar.Style = ProgressBarStyle.Blocks;
         }
 
-        private void Error(string message)
+        private static void Error(string message)
         {
-            MessageBox.Show(message, "DMU File Uploader",
+            MessageBox.Show(message, Program.Title,
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 

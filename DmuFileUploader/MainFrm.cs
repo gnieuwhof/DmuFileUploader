@@ -61,7 +61,7 @@
 
         private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            this.Close();
         }
 
         private void LoginToolStripMenuItem_Click(object sender, EventArgs e)
@@ -109,8 +109,8 @@
 
             string message = string.Join(Environment.NewLine, lines);
 
-            DialogResult result = MessageBox.Show(message,
-                "Upload to Dynamics 365", MessageBoxButtons.OKCancel);
+            DialogResult result = MessageBox.Show(message, "Upload to Dynamics 365",
+                MessageBoxButtons.OKCancel, MessageBoxIcon.Question);
 
             if (result == DialogResult.OK)
             {
@@ -589,6 +589,19 @@
                 "EntityDefinitions", setNameFilter, expand, "EntitySetName");
 
             return entityDefinition;
+        }
+
+        private void MainFrm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            string question = "Are you sure you want to exit the application?";
+
+            DialogResult result = MessageBox.Show(question,
+                Program.Title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result == DialogResult.No)
+            {
+                e.Cancel = true;
+            }
         }
     }
 }

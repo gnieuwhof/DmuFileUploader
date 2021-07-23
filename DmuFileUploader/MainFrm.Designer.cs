@@ -51,7 +51,7 @@ namespace DmuFileUploader
             this.connectionToolStripMenuItem});
             this.MenuStrip.Location = new System.Drawing.Point(0, 0);
             this.MenuStrip.Name = "MenuStrip";
-            this.MenuStrip.Size = new System.Drawing.Size(1106, 38);
+            this.MenuStrip.Size = new System.Drawing.Size(885, 28);
             this.MenuStrip.TabIndex = 0;
             this.MenuStrip.Text = "Menu Strip";
             // 
@@ -62,7 +62,7 @@ namespace DmuFileUploader
             this.uploadToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(46, 34);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(46, 24);
             this.fileToolStripMenuItem.Text = "&File";
             // 
             // selectToolStripMenuItem
@@ -91,7 +91,7 @@ namespace DmuFileUploader
             this.connectionToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.loginToolStripMenuItem});
             this.connectionToolStripMenuItem.Name = "connectionToolStripMenuItem";
-            this.connectionToolStripMenuItem.Size = new System.Drawing.Size(98, 34);
+            this.connectionToolStripMenuItem.Size = new System.Drawing.Size(98, 24);
             this.connectionToolStripMenuItem.Text = "&Connection";
             // 
             // loginToolStripMenuItem
@@ -106,16 +106,16 @@ namespace DmuFileUploader
             this.StatusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.StatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statusLabel});
-            this.StatusStrip.Location = new System.Drawing.Point(0, 545);
+            this.StatusStrip.Location = new System.Drawing.Point(0, 436);
             this.StatusStrip.Name = "StatusStrip";
-            this.StatusStrip.Size = new System.Drawing.Size(1106, 33);
+            this.StatusStrip.Size = new System.Drawing.Size(885, 26);
             this.StatusStrip.TabIndex = 0;
             this.StatusStrip.Text = "Status Strip";
             // 
             // statusLabel
             // 
             this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(154, 27);
+            this.statusLabel.Size = new System.Drawing.Size(154, 20);
             this.statusLabel.Text = "Status: Not connected";
             // 
             // TextTxt
@@ -125,12 +125,12 @@ namespace DmuFileUploader
             this.TextTxt.CausesValidation = false;
             this.TextTxt.Dock = System.Windows.Forms.DockStyle.Fill;
             this.TextTxt.Font = new System.Drawing.Font("Consolas", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.TextTxt.Location = new System.Drawing.Point(0, 48);
+            this.TextTxt.Location = new System.Drawing.Point(0, 28);
             this.TextTxt.Multiline = true;
             this.TextTxt.Name = "TextTxt";
             this.TextTxt.ReadOnly = true;
             this.TextTxt.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.TextTxt.Size = new System.Drawing.Size(1106, 489);
+            this.TextTxt.Size = new System.Drawing.Size(885, 408);
             this.TextTxt.TabIndex = 1;
             this.TextTxt.TabStop = false;
             // 
@@ -145,6 +145,7 @@ namespace DmuFileUploader
             this.MainMenuStrip = this.MenuStrip;
             this.Name = "MainFrm";
             this.Text = "Data Migration Utility    File Uploader";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainFrm_FormClosing);
             this.Load += new System.EventHandler(this.MainFrm_Load);
             this.MenuStrip.ResumeLayout(false);
             this.MenuStrip.PerformLayout();
