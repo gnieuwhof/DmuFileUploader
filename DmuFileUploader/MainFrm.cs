@@ -56,7 +56,7 @@
 
             this.Write(text);
 
-            this.SetStatus("Not connected");
+            this.SetStatus();
         }
 
         private void ExitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -141,7 +141,7 @@
                     DateTime utcValidTo = this.connectionInfo.UtcValidTo;
                     DateTime localValidTo = utcValidTo.ToLocalTime();
 
-                    this.SetStatus($"Connected to {uri}");
+                    this.SetStatus();
 
                     this.WriteLine();
                     this.WriteLine("Connection info:");
@@ -173,6 +173,8 @@
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 this.file = openFileDialog.FileName;
+
+                this.SetStatus();
 
                 this.WriteLine($"Selected file: {this.file}");
                 this.WriteLine();
@@ -238,11 +240,25 @@
             this.Write(text);
         }
 
-        private void SetStatus(string status)
+        private void SetStatus()
         {
-            string time = DateTime.Now.ToString("HH:mm:ss");
+            string connectedTo = (this.connectionInfo != null)
+                ? this.connectionInfo?.Resource.AbsoluteUri
+                : "not connected";
 
-            this.statusLabel.Text = $"{time} Status: {status}";
+            string selectedFile = (this.file != null)
+                ? Path.GetFileName(this.file)
+                : "none";
+
+            var items = new[]
+            {
+                $"Connection: {connectedTo}",
+                $"Selected file: {selectedFile}"
+            };
+
+            string status = string.Join("    |    ", items);
+
+            this.statusLabel.Text = status;
         }
 
         private async Task UploadFile()
