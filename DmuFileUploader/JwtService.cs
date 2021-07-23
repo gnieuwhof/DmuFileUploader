@@ -4,29 +4,11 @@
 
     public static class JWTService
     {
-        public static DateTime GetUtcIssuedAt(string accessToken)
-        {
-            var jsonWebToken = JsonWebToken.Create(accessToken);
-
-            long timestamp = jsonWebToken.GetValue<long>("iat");
-
-            DateTime utcDateTime = UnixTimestampToUtcDateTime(timestamp);
-
-            return utcDateTime;
-        }
-
         public static DateTime GetUtcValidTo(string accessToken)
         {
-            DateTime utcValidTo = GetUtcDateTime(accessToken, "exp");
-
-            return utcValidTo;
-        }
-
-        private static DateTime GetUtcDateTime(string accessToken, string key)
-        {
             var jsonWebToken = JsonWebToken.Create(accessToken);
 
-            long timestamp = jsonWebToken.GetValue<long>(key);
+            long timestamp = jsonWebToken.GetValue<long>("exp");
 
             DateTime utcDateTime = UnixTimestampToUtcDateTime(timestamp);
 

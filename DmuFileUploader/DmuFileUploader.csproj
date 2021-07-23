@@ -58,6 +58,7 @@
     <Compile Include="AsyncLock.cs" />
     <Compile Include="Authentication.cs" />
     <Compile Include="ConnectionInfo.cs" />
+    <Compile Include="ControlExtensions.cs" />
     <Compile Include="EntityDefinition.cs" />
     <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="FileHelper.cs" />

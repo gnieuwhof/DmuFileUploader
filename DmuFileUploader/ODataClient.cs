@@ -180,7 +180,16 @@
 
                     this.connectionInfo.SetHeader(header);
 
+                    this.httpClient.DefaultRequestHeaders.Authorization = header;
+
+                    this.WriteLine(string.Empty);
                     this.WriteLine("New OAuth token retrieved.");
+
+                    DateTime utcValidTo = this.connectionInfo.UtcValidTo;
+                    DateTime localValidTo = utcValidTo.ToLocalTime();
+
+                    this.WriteLine($"Expires: {localValidTo}");
+                    this.WriteLine(string.Empty);
                 }
             }
         }

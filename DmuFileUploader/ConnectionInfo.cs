@@ -5,10 +5,6 @@
 
     public class ConnectionInfo
     {
-        // Note a positive time means we are ahead.
-        private TimeSpan clockDelta;
-
-
         public ConnectionInfo(
             Uri resource,
             Uri authorizeUrl,
@@ -43,8 +39,6 @@
 
         public AuthenticationHeaderValue AuthHeader { get; private set; }
 
-        public DateTime UtcIssuedAt { get; private set; }
-
         public DateTime UtcValidTo { get; private set; }
 
 
@@ -55,22 +49,14 @@
 
             string token = $"{authHeader}".Substring("Bearer ".Length);
 
-            this.UtcIssuedAt = JWTService.GetUtcIssuedAt(token);
             this.UtcValidTo = JWTService.GetUtcValidTo(token);
-
-            var utcNow = DateTime.UtcNow;
-
-            this.clockDelta = utcNow.Subtract(this.UtcIssuedAt.AddMinutes(5));
         }
 
         public bool IsValid(TimeSpan margin)
         {
-            DateTime localMachineUtcValidTo = this.UtcValidTo
-                .Add(this.clockDelta);
-
             var utcNow = DateTime.UtcNow;
 
-            var validRemaining = localMachineUtcValidTo.Subtract(utcNow);
+            var validRemaining = this.UtcValidTo.Subtract(utcNow);
 
             return (validRemaining > margin);
         }

@@ -18,7 +18,7 @@
 
     public partial class MainFrm : Form
     {
-        private const int BACTCH_SIZE = 10;
+        private const int BACTCH_SIZE = 1;
 
         private readonly HttpClient httpClient;
 
@@ -188,7 +188,40 @@
 
         public void Write(string text)
         {
-            this.TextTxt.AppendText(text);
+            AddText(this.TextTxt, text);
+        }
+        private static void AddText(TextBox textBox, string text)
+        {
+            if (textBox.IsDisposed)
+            {
+                return;
+            }
+
+            var bottomLeft = new Point(3, textBox.ClientSize.Height - 3);
+            int lastVisibleCharIndex = textBox.GetCharIndexFromPosition(bottomLeft);
+            int lastVisibleLine = textBox.GetLineFromCharIndex(lastVisibleCharIndex);
+
+            int selectionStart = textBox.SelectionStart;
+            int selectionLength = textBox.SelectionLength;
+            int topLeft = textBox.GetCharIndexFromPosition(new Point(3, 3));
+
+            textBox.Suspend();
+
+            bool restoreScollPosition =
+                (textBox.Lines.Length - 1 >= lastVisibleLine);
+
+            textBox.AppendText(text);
+
+            if (restoreScollPosition)
+            {
+                textBox.Select(topLeft, 0);
+                textBox.ScrollToCaret();
+            }
+
+            // Restore selection
+            textBox.Select(selectionStart, selectionLength);
+
+            textBox.Resume();
         }
 
         public void WriteLine(string line = "")
@@ -251,6 +284,8 @@
                     this.WriteLine($"Found {data.entity.Length} entit{ies} in the data.");
                     foreach (entitiesEntity entitiesEntity in data.entity)
                     {
+                        this.WriteLine();
+
                         Schema.entitiesEntity entity = schema.entity
                             .FirstOrDefault(e => e.name == entitiesEntity.name);
 
@@ -269,6 +304,7 @@
 
                         entitiesEntityRecord[] records = entitiesEntity.records;
                         this.WriteLine($"Found {records.Length} records to process.");
+                        this.WriteLine();
 
                         IEnumerable<Guid> ids = records.Select(r => new Guid(r.id));
 
@@ -290,11 +326,13 @@
                             await ProcessBatch(helper, batch);
                         }
 
+                        this.WriteLine();
                         this.WriteLine($"Done processing entity: {entity.name}.");
                     }
 
                     string fileName = Path.GetFileName(this.file);
 
+                    this.WriteLine();
                     this.WriteLine($"Done processing file: {fileName}.");
                 }
 
@@ -305,6 +343,8 @@
             {
                 this.WriteLine(ex.ToString());
             }
+
+            this.WriteLine();
 
             this.selectToolStripMenuItem.Enabled = true;
             this.uploadToolStripMenuItem.Enabled = true;
@@ -345,7 +385,7 @@
                 if (!response.IsSuccessStatusCode)
                 {
                     string content = await response.Content.ReadAsStringAsync();
-                    this.WriteLine(content);
+                    this.WriteLine($"Processing record failed ({response.ReasonPhrase}) {content}");
                 }
                 else
                 {
