@@ -26,6 +26,8 @@
 
         private string file;
 
+        private bool cancelUploading;
+
 
         public MainFrm(HttpClient httpClient)
         {
@@ -263,18 +265,48 @@
 
         private async Task UploadFile()
         {
-            this.selectToolStripMenuItem.Enabled = false;
-            this.uploadToolStripMenuItem.Enabled = false;
-            this.loginToolStripMenuItem.Enabled = false;
+            this.cancelUploading = false;
 
-            string dataFile = this.file;
+            this.EnableToolStripItems(false);
 
+            try
+            {
+                await InnerUploadFile();
+            }
+            catch (Exception ex)
+            {
+                this.WriteLine(ex.ToString());
+            }
+            finally
+            {
+                this.WriteLine();
+
+                this.EnableToolStripItems(true);
+
+                if(this.cancelUploading)
+                {
+                    this.WriteLine("Uploading cancelled.");
+                    this.WriteLine();
+                }
+            }
+        }
+
+        private void EnableToolStripItems(bool uploading)
+        {
+            this.selectToolStripMenuItem.Enabled = uploading;
+            this.uploadToolStripMenuItem.Enabled = uploading;
+            this.cancelToolStripMenuItem.Enabled = !uploading;
+            this.loginToolStripMenuItem.Enabled = uploading;
+        }
+
+        private async Task InnerUploadFile()
+        {
             string tempFolder = $"{Guid.NewGuid()}";
 
             try
             {
                 this.WriteLine($"Extracting zip file to temp folder: {tempFolder}");
-                ZipFile.ExtractToDirectory(dataFile, tempFolder);
+                ZipFile.ExtractToDirectory(this.file, tempFolder);
 
                 this.WriteLine("Deserializing data schema.");
                 var schema = FileHelper.DeserializeXmlFile<Schema.entities>(
@@ -300,6 +332,11 @@
                     this.WriteLine($"Found {data.entity.Length} entit{ies} in the data.");
                     foreach (entitiesEntity entitiesEntity in data.entity)
                     {
+                        if (this.cancelUploading)
+                        {
+                            return;
+                        }
+
                         this.WriteLine();
 
                         Schema.entitiesEntity entity = schema.entity
@@ -339,6 +376,11 @@
 
                         foreach (IEnumerable<entitiesEntityRecord> batch in batches)
                         {
+                            if (this.cancelUploading)
+                            {
+                                return;
+                            }
+
                             await ProcessBatch(helper, batch);
                         }
 
@@ -351,20 +393,12 @@
                     this.WriteLine();
                     this.WriteLine($"Done processing file: {fileName}.");
                 }
-
+            }
+            finally
+            {
                 this.WriteLine($"Removing temp folder: {tempFolder}");
                 Directory.Delete(tempFolder, true);
             }
-            catch (Exception ex)
-            {
-                this.WriteLine(ex.ToString());
-            }
-
-            this.WriteLine();
-
-            this.selectToolStripMenuItem.Enabled = true;
-            this.uploadToolStripMenuItem.Enabled = true;
-            this.loginToolStripMenuItem.Enabled = true;
         }
 
         private async Task ProcessBatch(UploadHelper helper,
@@ -618,6 +652,15 @@
             {
                 e.Cancel = true;
             }
+        }
+
+        private void cancelToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.WriteLine();
+            this.WriteLine("Cancelling upload...");
+            this.WriteLine();
+
+            this.cancelUploading = true;
         }
     }
 }
