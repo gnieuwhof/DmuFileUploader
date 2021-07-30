@@ -9,6 +9,8 @@
     {
         public static string Title => "Data Migration Utility | File Uploader";
 
+        public static string ApiPath => "api/data/v9.2/";
+
 
         /// <summary>
         /// The main entry point for the application.

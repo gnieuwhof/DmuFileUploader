@@ -58,6 +58,11 @@
             return CallAsync(HttpMethod.Post, entitySetName, json);
         }
 
+        public Task<HttpResponseMessage> PostAsync(ODataRelationship relationship)
+        {
+            return CallAsync(HttpMethod.Post, relationship.RequestUri, relationship.Content);
+        }
+
         public Task<HttpResponseMessage> PatchAsync(
             string entitySetName, string json, Guid id)
         {

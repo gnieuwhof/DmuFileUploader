@@ -13,6 +13,8 @@
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Runtime.CompilerServices;
+    using System.Text;
     using System.Threading.Tasks;
     using System.Windows.Forms;
 
@@ -283,7 +285,7 @@
 
                 this.EnableToolStripItems(true);
 
-                if(this.cancelUploading)
+                if (this.cancelUploading)
                 {
                     this.WriteLine("Uploading cancelled.");
                     this.WriteLine();
@@ -317,14 +319,14 @@
                     Path.Combine(tempFolder, "data.xml"));
 
                 AuthenticationHeaderValue authHeader = this.connectionInfo.AuthHeader;
-                Uri endpointUri = new Uri(this.connectionInfo.Resource, "api/data/v9.2/");
+                Uri endpointUri = new Uri(this.connectionInfo.Resource, Program.ApiPath);
 
                 using (var httpClient = new ODataHttpClient(endpointUri, authHeader))
                 {
                     var oDataClient = new ODataClient(httpClient,
                         this.connectionInfo, this.WriteLine);
 
-                    var resourcePathCache = new Dictionary<string, string>();
+                    var entityDefinitionCache = new Dictionary<string, EntityDefinition>();
 
                     string ies = schema.entity.Length == 1 ? "y" : "ies";
                     this.WriteLine($"Found {schema.entity.Length} entit{ies} in the schema.");
@@ -349,8 +351,8 @@
                         }
 
                         this.WriteLine($"Getting resource path for entity: {entity.name}");
-                        EntityDefinition entityDefinition =
-                            await GetEntityDefinition(oDataClient, entity.name);
+                        EntityDefinition entityDefinition = await GetEntityDefinition(
+                            oDataClient, entity.name, entityDefinitionCache);
 
                         string resourcePath = entityDefinition.ResourcePath;
                         this.WriteLine($"Resource path: {resourcePath}");
@@ -384,6 +386,54 @@
                             await ProcessBatch(helper, batch);
                         }
 
+
+                        /*
+                         * BEGIN M2M
+                         */
+
+                        var relationships = new List<ODataRelationship>();
+
+                        foreach (var m2m in entitiesEntity.m2mrelationships)
+                        {
+                            EntityDefinition targetEntityDefinition = await GetEntityDefinition(
+                                oDataClient, m2m.targetentityname, entityDefinitionCache);
+
+                            foreach (string targetId in m2m.targetids)
+                            {
+                                var relationship = ODataRelationship.Create(
+                                    this.connectionInfo.Resource,
+                                    targetEntityDefinition.ResourcePath,
+                                    m2m.m2mrelationshipname,
+                                    m2m.sourceid,
+                                    targetId
+                                    );
+
+                                relationships.Add(relationship);
+                            }
+                        }
+
+                        this.WriteLine();
+                        this.WriteLine($"Found {relationships.Count()} relationships to process.");
+                        this.WriteLine();
+
+                        var relationshipBatches = relationships.Batch(BACTCH_SIZE);
+
+                        var taskList = new List<ConfiguredTaskAwaitable<HttpResponseMessage>>();
+                        foreach (IEnumerable<ODataRelationship> relationshipBatch in relationshipBatches)
+                        {
+                            if (this.cancelUploading)
+                            {
+                                return;
+                            }
+
+                            await ProcessRelations(oDataClient, relationshipBatch);
+                        }
+
+                        /*
+                         * END M2M
+                         */
+
+
                         this.WriteLine();
                         this.WriteLine($"Done processing entity: {entity.name}.");
                     }
@@ -399,6 +449,25 @@
                 this.WriteLine($"Removing temp folder: {tempFolder}");
                 Directory.Delete(tempFolder, true);
             }
+        }
+
+        private async Task<EntityDefinition> GetEntityDefinition(
+            ODataClient oDataClient,
+            string entityName,
+            Dictionary<string, EntityDefinition> cache
+            )
+        {
+            if (!cache.ContainsKey(entityName))
+            {
+                EntityDefinition entityDefinition =
+                    await GetEntityDefinition(oDataClient, entityName);
+
+                cache.Add(entityName, entityDefinition);
+            }
+
+            EntityDefinition result = cache[entityName];
+
+            return result;
         }
 
         private async Task ProcessBatch(UploadHelper helper,
@@ -445,6 +514,40 @@
             catch (Exception ex)
             {
                 this.WriteLine($"Exception: {ex.Message}");
+            }
+        }
+
+        private async Task ProcessRelations(
+            ODataClient oDataClient,
+            IEnumerable<ODataRelationship> relationships)
+        {
+            var tasks = new List<Task<HttpResponseMessage>>();
+
+            foreach (ODataRelationship relationship in relationships)
+            {
+                this.WriteLine($"Processing realtionship {relationship.SourceId} - {relationship.TargetId}");
+
+                var task = oDataClient.PostAsync(relationship);
+
+                tasks.Add(task);
+            }
+
+            int index = 0;
+            foreach (Task<HttpResponseMessage> task in tasks)
+            {
+                HttpResponseMessage result = await task;
+
+                if(!result.IsSuccessStatusCode)
+                {
+                    var relationship = relationships.ElementAt(index);
+
+                    this.WriteLine();
+                    this.WriteLine($"Error ({result.StatusCode}) {relationship.SourceId} - {relationship.TargetId}");
+                    this.WriteLine(await result.Content.ReadAsStringAsync());
+                    this.WriteLine();
+                }
+
+                ++index;
             }
         }
 

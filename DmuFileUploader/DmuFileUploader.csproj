@@ -78,6 +78,7 @@
     </Compile>
     <Compile Include="ManyToOneRelationship.cs" />
     <Compile Include="OAuthError.cs" />
+    <Compile Include="ODataAssociate.cs" />
     <Compile Include="ODataClient.cs" />
     <Compile Include="ODataExpand.cs" />
     <Compile Include="ODataFilter\IODataFilter.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="ODataResponse.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ODataRelationship.cs" />
     <Compile Include="Schemas\ContentTypes.cs">
       <DependentUpon>ContentTypes.xsd</DependentUpon>
     </Compile>
