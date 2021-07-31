@@ -14,7 +14,6 @@
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading.Tasks;
     using System.Windows.Forms;
 
@@ -214,7 +213,7 @@
             textBox.Suspend();
 
             bool restoreScollPosition =
-                (textBox.Lines.Length - 1 >= lastVisibleLine);
+                (textBox.Lines.Length - 3 >= lastVisibleLine);
 
             textBox.AppendText(text);
 
@@ -357,8 +356,12 @@
                         string resourcePath = entityDefinition.ResourcePath;
                         this.WriteLine($"Resource path: {resourcePath}");
 
-                        entitiesEntityRecord[] records = entitiesEntity.records;
-                        this.WriteLine($"Found {records.Length} records to process.");
+                        entitiesEntityRecord[] records = entitiesEntity.records
+                            .Where(r => r.field != null)
+                            .ToArray();
+
+                        string s = (records.Length == 1) ? string.Empty : "s";
+                        this.WriteLine($"Found {records.Length} record{s} to process.");
                         this.WriteLine();
 
                         IEnumerable<Guid> ids = records.Select(r => new Guid(r.id));
@@ -386,34 +389,41 @@
                             await ProcessBatch(helper, batch);
                         }
 
-
                         /*
-                         * BEGIN M2M
+                         * M2M
                          */
 
                         var relationships = new List<ODataRelationship>();
 
-                        foreach (var m2m in entitiesEntity.m2mrelationships)
+                        if (entitiesEntity.m2mrelationships != null)
                         {
-                            EntityDefinition targetEntityDefinition = await GetEntityDefinition(
-                                oDataClient, m2m.targetentityname, entityDefinitionCache);
-
-                            foreach (string targetId in m2m.targetids)
+                            foreach (var m2m in entitiesEntity.m2mrelationships)
                             {
-                                var relationship = ODataRelationship.Create(
-                                    this.connectionInfo.Resource,
-                                    targetEntityDefinition.ResourcePath,
-                                    m2m.m2mrelationshipname,
-                                    m2m.sourceid,
-                                    targetId
-                                    );
+                                EntityDefinition targetEntityDefinition = await GetEntityDefinition(
+                                    oDataClient, m2m.targetentityname, entityDefinitionCache);
 
-                                relationships.Add(relationship);
+                                var m2mRelationship = entityDefinition.ManyToManyRelationships
+                                    .FirstOrDefault(r => r.Entity2LogicalName == m2m.targetentityname)
+;
+                                foreach (string targetId in m2m.targetids)
+                                {
+                                    var relationship = ODataRelationship.Create(
+                                        this.connectionInfo.Resource,
+                                        targetEntityDefinition.ResourcePath,
+                                        m2mRelationship.Entity2NavigationPropertyName,
+                                        m2m.sourceid,
+                                        targetId
+                                        );
+
+                                    relationships.Add(relationship);
+                                }
                             }
                         }
 
+
                         this.WriteLine();
-                        this.WriteLine($"Found {relationships.Count()} relationships to process.");
+                        s = (relationships.Count() == 1) ? string.Empty : "s";
+                        this.WriteLine($"Found {relationships.Count()} relationship{s} to process.");
                         this.WriteLine();
 
                         var relationshipBatches = relationships.Batch(BACTCH_SIZE);
@@ -428,11 +438,6 @@
 
                             await ProcessRelations(oDataClient, relationshipBatch);
                         }
-
-                        /*
-                         * END M2M
-                         */
-
 
                         this.WriteLine();
                         this.WriteLine($"Done processing entity: {entity.name}.");
@@ -525,7 +530,7 @@
 
             foreach (ODataRelationship relationship in relationships)
             {
-                this.WriteLine($"Processing realtionship {relationship.SourceId} - {relationship.TargetId}");
+                this.WriteLine($"S: {relationship.SourceId} T: {relationship.TargetId}");
 
                 var task = oDataClient.PostAsync(relationship);
 
@@ -537,7 +542,7 @@
             {
                 HttpResponseMessage result = await task;
 
-                if(!result.IsSuccessStatusCode)
+                if (!result.IsSuccessStatusCode)
                 {
                     var relationship = relationships.ElementAt(index);
 
@@ -735,8 +740,29 @@
         {
             var setNameFilter = new ODataEqualsFilter<string>("LogicalName", entityName);
 
-            var expand = new ODataExpand("ManyToOneRelationships",
-                "ReferencedEntity", "ReferencingAttribute", "ReferencingEntityNavigationPropertyName");
+            var expands = new Dictionary<string, IEnumerable<string>>
+            {
+                {
+                    "ManyToOneRelationships",
+                    new []
+                    {
+                        "ReferencedEntity",
+                        "ReferencingAttribute",
+                        "ReferencingEntityNavigationPropertyName"
+                    }
+                },
+                {
+                    "ManyToManyRelationships",
+                    new []
+                    {
+                        "Entity2LogicalName",
+                        "IntersectEntityName",
+                        "Entity2NavigationPropertyName"
+                    }
+                }
+            };
+
+            var expand = new ODataExpand(expands);
 
             var entityDefinition = await oDataClient.FindEntryAsync<EntityDefinition>(
                 "EntityDefinitions", setNameFilter, expand, "EntitySetName");

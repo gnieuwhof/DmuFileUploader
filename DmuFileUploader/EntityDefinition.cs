@@ -13,5 +13,8 @@
 
         [JsonProperty("ManyToOneRelationships")]
         public ManyToOneRelationship[] ManyToOneRelationships { get; set; }
+
+        [JsonProperty("ManyToManyRelationships")]
+        public ManyToManyRelationship[] ManyToManyRelationships { get; set; }
     }
 }

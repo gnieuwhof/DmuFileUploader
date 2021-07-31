@@ -76,6 +76,7 @@
     <Compile Include="MainFrm.Designer.cs">
       <DependentUpon>MainFrm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ManyToManyRelationship.cs" />
     <Compile Include="ManyToOneRelationship.cs" />
     <Compile Include="OAuthError.cs" />
     <Compile Include="ODataAssociate.cs" />

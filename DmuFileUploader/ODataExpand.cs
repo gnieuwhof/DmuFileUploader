@@ -1,35 +1,47 @@
 ﻿namespace DmuFileUploader
 {
+    using System;
+    using System.Collections.Generic;
     using System.Linq;
 
     public class ODataExpand
     {
-        public ODataExpand(string field)
-        {
-            this.Field = field;
-        }
+        private readonly Dictionary<string, IEnumerable<string>> expands;
+
 
         public ODataExpand(string field, params string[] columns)
+            : this(new Dictionary<string, IEnumerable<string>> { { field, columns } })
         {
-            this.Field = field;
-
-            this.Select = columns;
         }
 
-
-        public string Field { get; }
-
-        public string[] Select { get; }
+        public ODataExpand(Dictionary<string, IEnumerable<string>> expands)
+        {
+            this.expands = expands ??
+                throw new ArgumentNullException(nameof(expands));
+        }
 
 
         public string Expression()
         {
-            string expression = this.Field;
-
-            if (this.Select?.Any() == true)
+            var expandList = new List<string>();
+            foreach (var expand in expands)
             {
-                expression = $"{expression}($select={string.Join(",", this.Select)})";
+                string entity = expand.Key;
+                IEnumerable<string> fields = expand.Value;
+
+                string query = entity;
+
+                if (fields?.Any() == true)
+                {
+                    string fieldsQuery = string.Join(",", fields);
+
+                    query += $"($select={fieldsQuery})";
+                }
+
+                expandList.Add(query);
             }
+
+            string expression = string.Join(",", expandList);
 
             return expression;
         }
