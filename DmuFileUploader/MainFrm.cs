@@ -349,7 +349,6 @@
                             continue;
                         }
 
-                        this.WriteLine($"Getting resource path for entity: {entity.name}");
                         EntityDefinition entityDefinition = await GetEntityDefinition(
                             oDataClient, entity.name, entityDefinitionCache);
 
@@ -464,6 +463,10 @@
         {
             if (!cache.ContainsKey(entityName))
             {
+                this.WriteLine();
+                this.WriteLine($"Getting entity definition for: {entityName}");
+                this.WriteLine();
+
                 EntityDefinition entityDefinition =
                     await GetEntityDefinition(oDataClient, entityName);
 
