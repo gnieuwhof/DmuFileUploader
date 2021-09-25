@@ -21,6 +21,9 @@
     {
         private const int BACTCH_SIZE = 10;
 
+        private const string DATA_FILE = "data.xml";
+        private const string SCHEMA_FILE = "data_schema.xml";
+
         private readonly HttpClient httpClient;
 
         private ConnectionInfo connectionInfo;
@@ -307,15 +310,58 @@
             try
             {
                 this.WriteLine($"Extracting zip file to temp folder: {tempFolder}");
-                ZipFile.ExtractToDirectory(this.file, tempFolder);
 
-                this.WriteLine("Deserializing data schema.");
-                var schema = FileHelper.DeserializeXmlFile<Schema.entities>(
-                    Path.Combine(tempFolder, "data_schema.xml"));
+                try
+                {
+                    ZipFile.ExtractToDirectory(this.file, tempFolder);
+                }
+                catch (Exception ex)
+                {
+                    SelectedFileContentError($"Unzip error: {ex.Message}");
+                    return;
+                }
 
-                this.WriteLine("Deserializing data.");
-                var data = FileHelper.DeserializeXmlFile<entities>(
-                    Path.Combine(tempFolder, "data.xml"));
+                this.WriteLine();
+
+                if (!File.Exists(Path.Combine(tempFolder, SCHEMA_FILE)))
+                {
+                    SelectedFileContentError(
+                        $"Schema ({SCHEMA_FILE}) in selected file not found.");
+                    return;
+                }
+
+                if (!File.Exists(Path.Combine(tempFolder, DATA_FILE)))
+                {
+                    SelectedFileContentError($"Data ({DATA_FILE}) in selected file not found.");
+                    return;
+                }
+
+                string schemaFile = Path.Combine(tempFolder, "data_schema.xml");
+                string error = null;
+                Schema.entities schema = DeserializeFile<Schema.entities>(
+                    schemaFile, "Deserializing data schema.", ref error);
+                if (error != null)
+                {
+                    SelectedFileContentError(error);
+                    return;
+                }
+                this.WriteLine("Schema file deserialized.");
+                WriteLineWithNumber("Found {0} entit{1} in the schema.",
+                    schema.entity.Length, "y", "ies");
+                this.WriteLine();
+
+                string dataFile = Path.Combine(tempFolder, "data.xml");
+                entities data = DeserializeFile<entities>(
+                    dataFile, "Deserializing data.", ref error);
+                if (error != null)
+                {
+                    SelectedFileContentError(error);
+                    return;
+                }
+                this.WriteLine("Data file deserialized.");
+                WriteLineWithNumber("Found {0} entit{1} in the data.",
+                    data.entity.Length, "y", "ies");
+                this.WriteLine();
 
                 AuthenticationHeaderValue authHeader = this.connectionInfo.AuthHeader;
                 Uri endpointUri = new Uri(this.connectionInfo.Resource, Program.ApiPath);
@@ -327,18 +373,12 @@
 
                     var entityDefinitionCache = new Dictionary<string, EntityDefinition>();
 
-                    string ies = schema.entity.Length == 1 ? "y" : "ies";
-                    this.WriteLine($"Found {schema.entity.Length} entit{ies} in the schema.");
-                    ies = data.entity.Length == 1 ? "y" : "ies";
-                    this.WriteLine($"Found {data.entity.Length} entit{ies} in the data.");
                     foreach (entitiesEntity entitiesEntity in data.entity)
                     {
                         if (this.cancelUploading)
                         {
                             return;
                         }
-
-                        this.WriteLine();
 
                         Schema.entitiesEntity entity = schema.entity
                             .FirstOrDefault(e => e.name == entitiesEntity.name);
@@ -450,9 +490,52 @@
             }
             finally
             {
-                this.WriteLine($"Removing temp folder: {tempFolder}");
-                Directory.Delete(tempFolder, true);
+                if (File.Exists(tempFolder))
+                {
+                    this.WriteLine($"Removing temp folder: {tempFolder}");
+                    Directory.Delete(tempFolder, true);
+                }
             }
+        }
+
+        private void WriteLineWithNumber(string messageWithPlaceholders,
+            int length, string one, string multiple)
+        {
+            string s = length == 1 ? one : multiple;
+
+            string message = string.Format(messageWithPlaceholders, length, s);
+
+            this.WriteLine(message);
+        }
+
+        private T DeserializeFile<T>(string file, string message, ref string error)
+        {
+            T deserialized = default;
+
+            this.WriteLine(message);
+
+            try
+            {
+                deserialized = FileHelper.DeserializeXmlFile<T>(file);
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+            }
+
+            return deserialized;
+        }
+
+        private void SelectedFileContentError(string message)
+        {
+            this.WriteLine(message);
+            this.WriteLine($"Unselecting file ({this.file}).");
+            this.WriteLine();
+
+            this.file = null;
+
+            MessageBox.Show(message, Program.Title,
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         private async Task<EntityDefinition> GetEntityDefinition(
@@ -512,7 +595,8 @@
                 if (!response.IsSuccessStatusCode)
                 {
                     string content = await response.Content.ReadAsStringAsync();
-                    this.WriteLine($"Processing record failed ({response.ReasonPhrase}) {content}");
+                    this.WriteLine($"Processing record failed ({response.ReasonPhrase})" +
+                        Environment.NewLine + content);
                 }
                 else
                 {
