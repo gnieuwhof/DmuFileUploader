@@ -103,6 +103,7 @@
       <DependentUpon>DataSchema.xsd</DependentUpon>
     </Compile>
     <Compile Include="UploadHelper.cs" />
+    <Compile Include="WriteHelper.cs" />
     <EmbeddedResource Include="LoginFrm.resx">
       <DependentUpon>LoginFrm.cs</DependentUpon>
     </EmbeddedResource>

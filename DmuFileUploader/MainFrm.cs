@@ -595,8 +595,9 @@
                 if (!response.IsSuccessStatusCode)
                 {
                     string content = await response.Content.ReadAsStringAsync();
+                    string error = WriteHelper.FormatIfJson(content);
                     this.WriteLine($"Processing record failed ({response.ReasonPhrase})" +
-                        Environment.NewLine + content);
+                        Environment.NewLine + error);
                 }
                 else
                 {
