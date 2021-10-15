@@ -490,7 +490,7 @@
             }
             finally
             {
-                if (File.Exists(tempFolder))
+                if (Directory.Exists(tempFolder))
                 {
                     this.WriteLine($"Removing temp folder: {tempFolder}");
                     Directory.Delete(tempFolder, true);
