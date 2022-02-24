@@ -26,7 +26,7 @@ namespace Data {
         
         private entitiesEntity[] entityField;
         
-        private System.DateTime timestampField;
+        private string timestampField;
         
         /// <remarks/>
         [System.Xml.Serialization.XmlElementAttribute("entity")]
@@ -41,7 +41,7 @@ namespace Data {
         
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public System.DateTime timestamp {
+        public string timestamp {
             get {
                 return this.timestampField;
             }
