@@ -215,8 +215,7 @@
 
             textBox.Suspend();
 
-            bool restoreScollPosition =
-                (textBox.Lines.Length - 3 >= lastVisibleLine);
+            bool restoreScollPosition = false;
 
             textBox.AppendText(text);
 
@@ -687,6 +686,7 @@
             {
                 if (field.value == null)
                 {
+                    dict.Add(field.name, null);
                     continue;
                 }
 
