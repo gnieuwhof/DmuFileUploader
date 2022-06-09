@@ -1,7 +1,9 @@
 ﻿namespace DmuFileUploader
 {
+    using Newtonsoft.Json;
     using System;
     using System.Drawing;
+    using System.IO;
     using System.Net.Http;
     using System.Threading.Tasks;
     using System.Windows.Forms;
@@ -33,11 +35,37 @@
                 this.UsernameTxt.Text = connectionInfo.Username;
                 this.PasswordTxt.Text = connectionInfo.Password;
             }
+            else
+            {
+                this.TryLoadLoginInfo();
+            }
         }
 
 
         public ConnectionInfo Info { get; private set; }
 
+
+        private void TryLoadLoginInfo()
+        {
+            try
+            {
+                if (File.Exists("login_info.json"))
+                {
+                    string json = File.ReadAllText("login_info.json");
+
+                    var loginInfo = JsonConvert.DeserializeObject<LoginInfo>(json);
+
+                    this.UrlTxt.Text = loginInfo.Url;
+                    this.UsernameTxt.Text = loginInfo.Username;
+
+                    this.ActiveControl = this.PasswordTxt;
+                }
+            }
+            catch (Exception ex)
+            {
+                Error(ex.Message);
+            }
+        }
 
         private void CancelBtn_Click(object sender, System.EventArgs e)
         {
@@ -118,6 +146,31 @@
                 this.StopProgressBar();
 
                 Error(ex.InnerException?.Message ?? ex.Message);
+
+                return;
+            }
+
+            this.TrySaveLoginInfo();
+        }
+
+        private void TrySaveLoginInfo()
+        {
+            try
+            {
+                var loginInfo = new LoginInfo
+                {
+                    Url = this.UrlTxt.Text,
+                    Username = this.UsernameTxt.Text,
+                    Password = null
+                };
+
+                string json = JsonConvert.SerializeObject(loginInfo);
+
+                File.WriteAllText("login_info.json", json);
+            }
+            catch (Exception ex)
+            {
+                Error(ex.Message);
             }
         }
 
